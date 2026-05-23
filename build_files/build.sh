@@ -35,8 +35,6 @@ dev_pkgs=(
 
 dnf5 install -y "${dev_pkgs[@]}"
 
-GOBIN=/usr/local/bin go install golang.org/x/tools/gopls@latest
-
 # Docker
 
 docker_pkgs=(
