@@ -9,8 +9,54 @@ set -ouex pipefail
 # List of rpmfusion packages can be found here:
 # https://mirrors.rpmfusion.org/mirrorlist?path=free/fedora/updates/43/x86_64/repoview/index.html&protocol=https&redirect=1
 
-# this installs a package from fedora repos
-dnf5 install -y tmux 
+dev_pkgs=(
+    # Terminal
+    zsh
+    kitty
+    tmux
+    helix
+    # Deps
+    python3-pip
+    python3-devel
+    python3-virtualenv
+    git-lfs
+    gcc
+    gcc-c++
+    make
+    jq
+    uv
+    # Node
+    nodejs
+    npm
+    pnpm
+    # Go
+    golang
+)
+
+dnf5 install -y "${dev_pkgs[@]}"
+
+GOBIN=/usr/local/bin go install golang.org/x/tools/gopls@latest
+
+# Docker
+
+docker_pkgs=(
+    containerd.io
+    docker-buildx-plugin
+    docker-ce
+    docker-ce-cli
+    docker-compose-plugin
+)
+dnf5 config-manager addrepo --from-repofile="https://download.docker.com/linux/fedora/docker-ce.repo"
+dnf5 config-manager setopt docker-ce-stable.enabled=0
+dnf5 install -y --enable-repo="docker-ce-stable" "${docker_pkgs[@]}"
+
+# Load iptable_nat module for docker-in-docker.
+# See:
+#   - https://github.com/ublue-os/bluefin/issues/2365
+#   - https://github.com/devcontainers/features/issues/1235
+mkdir -p /etc/modules-load.d && cat >>/etc/modules-load.d/ip_tables.conf <<EOF
+iptable_nat
+EOF
 
 # Use a COPR Example:
 #
@@ -21,4 +67,6 @@ dnf5 install -y tmux
 
 #### Example for enabling a System Unit File
 
-systemctl enable podman.socket
+systemctl enable docker.socket
+
+dnf5 clean all
